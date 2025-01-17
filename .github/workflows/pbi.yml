@@ -1,0 +1,14 @@
+            - name: Power BI Workspace Deploy
+  # You may pin to the exact commit or the version.
+  # uses: nathangiusti/Power-BI-Workspace-Deploy@2b7a125e0d722b7ffbfa7b5af145baa20eefddc7
+  uses: nathangiusti/Power-BI-Workspace-Deploy@v1.3
+  with:
+    # Location of config file
+    config_file: 
+    # Tenant ID of your Power BI instance
+    tenant_id: 
+    # Files to deploy
+    files: 
+    # Character used to separate file names in files argument
+    separator: # optional, default is ,
+          
