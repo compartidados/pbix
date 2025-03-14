@@ -5,64 +5,91 @@ on:
     branches:
       - main
     paths:
-      - 'pbix-files/**/*.pbix'
+      - 'pbix-files/**'
   workflow_dispatch:
 
 jobs:
-  deploy-powerbi:
-    runs-on: windows-latest  # Usando Windows para melhor suporte ao PowerShell
+  publish-powerbi:
+    runs-on: windows-latest
     steps:
-      - name: Checkout do repositório
+      - name: Checkout repositório
         uses: actions/checkout@v3
 
-      - name: Listar arquivos PBIX
-        id: find-pbix
+      - name: Verificar ambiente PowerShell
         shell: pwsh
         run: |
-          $files = Get-ChildItem -Path "pbix-files" -Filter "*.pbix" -Recurse -File | Select-Object -ExpandProperty FullName
-          $filesList = $files -join ','
-          Write-Host "Arquivos PBIX encontrados: $filesList"
-          echo "files=$filesList" >> $env:GITHUB_OUTPUT
-
-      - name: Instalar módulo Power BI
-        if: steps.find-pbix.outputs.files != ''
+          $PSVersionTable
+          Write-Host "Diretório atual: $PWD"
+          Write-Host "Conteúdo do repositório:"
+          Get-ChildItem -Recurse | Select-Object -First 20
+      
+      - name: Instalar módulos Power BI
         shell: pwsh
         run: |
-          Install-Module -Name MicrosoftPowerBIMgmt -Force -Scope CurrentUser -SkipPublisherCheck
-          Write-Host "Módulo Power BI instalado com sucesso"
-
-      - name: Publicar arquivos PBIX
-        if: steps.find-pbix.outputs.files != ''
+          Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name MicrosoftPowerBIMgmt -Force -Scope CurrentUser
+          Get-Module -ListAvailable MicrosoftPowerBIMgmt*
+      
+      - name: Encontrar arquivos PBIX
+        id: find_files
+        shell: pwsh
+        run: |
+          # Criar a pasta se não existir
+          if (-not (Test-Path "pbix-files")) {
+            New-Item -Path "pbix-files" -ItemType Directory
+            Write-Host "Pasta pbix-files criada"
+          }
+          
+          # Encontrar arquivos PBIX
+          $files = Get-ChildItem -Path "pbix-files" -Filter "*.pbix" -File -Recurse
+          
+          if ($files.Count -gt 0) {
+            $fileList = $files.FullName -join "`n"
+            Write-Host "Arquivos encontrados:"
+            Write-Host $fileList
+            
+            # Salvar lista de arquivos para o próximo passo
+            $fileList | Out-File -FilePath "pbix_files_list.txt"
+            echo "found=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "Nenhum arquivo PBIX encontrado."
+            echo "found=false" >> $env:GITHUB_OUTPUT
+          }
+      
+      - name: Publicar no Power BI
+        if: steps.find_files.outputs.found == 'true'
         shell: pwsh
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-          TENANT_ID: "eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2"
-          WORKSPACE_ID: "37ac69ab-ad7a-4540-af1d-baa525ee3c7f"
+          TENANT_ID: eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2
+          WORKSPACE_ID: 37ac69ab-ad7a-4540-af1d-baa525ee3c7f
         run: |
-          # Criar credencial segura
-          $password = ConvertTo-SecureString $env:CLIENT_SECRET -AsPlainText -Force
+          # Criar credencial para autenticação
+          $password = ConvertTo-SecureString "$env:CLIENT_SECRET" -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential($env:CLIENT_ID, $password)
           
-          # Conectar ao Power BI
+          # Conectar ao serviço Power BI
+          Write-Host "Conectando ao Power BI..."
           Connect-PowerBIServiceAccount -ServicePrincipal -Credential $credential -TenantId $env:TENANT_ID
           
-          # Obter lista de arquivos
-          $filesList = "${{ steps.find-pbix.outputs.files }}"
-          $files = $filesList -split ','
+          # Ler arquivos da lista
+          $files = Get-Content -Path "pbix_files_list.txt"
           
           # Publicar cada arquivo
           foreach ($file in $files) {
-            $fileName = Split-Path $file -Leaf
-            Write-Host "Publicando arquivo: $fileName"
-            
-            try {
-              New-PowerBIReport -Path $file -WorkspaceId $env:WORKSPACE_ID -ConflictAction CreateOrOverwrite
-              Write-Host "Arquivo $fileName publicado com sucesso"
-            }
-            catch {
-              Write-Host "Erro ao publicar $fileName : $_"
-              exit 1
+            if (Test-Path $file) {
+              $fileName = Split-Path -Path $file -Leaf
+              Write-Host "Publicando: $fileName ..."
+              try {
+                New-PowerBIReport -Path $file -WorkspaceId $env:WORKSPACE_ID -ConflictAction CreateOrOverwrite
+                Write-Host "✅ $fileName publicado com sucesso!"
+              } catch {
+                Write-Host "❌ Erro ao publicar $fileName : $_"
+              }
+            } else {
+              Write-Host "❌ Arquivo não encontrado: $file"
             }
           }
           
