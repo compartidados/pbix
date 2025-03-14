@@ -4,14 +4,19 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'compartidados/pbix/publish_pbix/**'
 
 jobs:
   Deploy-Asset:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Create directories if they don't exist
+        run: mkdir -p compartidados/pbix/publish_pbix
 
       - name: List files in publish_pbix directory
         run: ls -la compartidados/pbix/publish_pbix
@@ -21,14 +26,19 @@ jobs:
         uses: SkyHighGrowth/gha-changed-files@v1.0.1
         with:
           path: "compartidados/pbix/publish_pbix"
+          pattern: "*.pbix"
           separator: ","
           quotepath: "false"
 
+      - name: Debug - Show files to be uploaded
+        run: echo "Files to upload - ${{ steps.changed-files.outputs.all_modified_files }}"
+
       - name: Upload files
+        if: steps.changed-files.outputs.all_modified_files != ''
         uses: SkyHighGrowth/gha-powerbi-utils@v1.0.1
         with:
           files: ${{ steps.changed-files.outputs.all_modified_files }}
-          config_file: ".github/configuration/deploy_config.yaml"
+          config_file: ".github/config/deploy_config.yaml"
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
