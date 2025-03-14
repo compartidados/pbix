@@ -13,6 +13,13 @@ jobs:
         with:
           separator: ","
           quotepath: false
+      - name: Get changed PBIX files
+        id: changed-pbix-files
+        uses: tj-actions/changed-files@v19
+        with:
+          files: pbix_files/Workspace/*.pbix
+          separator: ","
+          quotepath: false
       - name: Power BI Workspace Deploy
         uses: nathangiusti/Power-BI-Workspace-Deploy@v1.2
         with:
