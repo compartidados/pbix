@@ -17,46 +17,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get added files
-        id: added-files
-        uses: SkyHighGrowth/gha-changed-files@v1.0.1
-        with:
-          path: "publish_pbix"
-          pattern: "*.pbix"
-          separator: ","
-          quotepath: "false"
-          filter: "A"
-
-      - name: Debug - Show newly added files
+      - name: Find PBIX files
+        id: find-pbix
         run: |
-          echo "Arquivos novos para publicação:"
-          echo "${{ steps.added-files.outputs.all_modified_files || 'nenhum' }}"
-          echo "Verificando se os arquivos existem:"
-          for file in $(echo "${{ steps.added-files.outputs.all_modified_files }}" | tr ',' ' '); do
-            if [ -f "$file" ]; then
-              echo "✅ $file existe"
-            else
-              echo "❌ $file não existe"
-            fi
-          done
+          # Encontra todos os arquivos PBIX no diretório publish_pbix
+          FILES=$(find publish_pbix -name "*.pbix" | tr '\n' ',')
+          if [ -n "$FILES" ]; then
+            # Remove a última vírgula
+            FILES=${FILES%,}
+            echo "files=$FILES" >> $GITHUB_OUTPUT
+            echo "Arquivos encontrados: $FILES"
+          else
+            echo "Nenhum arquivo PBIX encontrado"
+            echo "files=" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Prepare file paths
-        id: prepare-paths
-        if: steps.added-files.outputs.all_modified_files != ''
-        run: |
-          # Converter caminhos relativos para absolutos
-          FILES=$(echo "${{ steps.added-files.outputs.all_modified_files }}" | tr ',' '\n' | while read file; do
-            echo -n "$PWD/$file,"
-          done)
-          FILES=${FILES%,}  # Remove a última vírgula
-          echo "full_paths=$FILES" >> $GITHUB_OUTPUT
-          echo "Caminhos completos: $FILES"
-
-      - name: Upload new PBIX files
-        if: steps.added-files.outputs.all_modified_files != ''
+      - name: Upload PBIX files
+        if: steps.find-pbix.outputs.files != ''
         uses: SkyHighGrowth/gha-powerbi-utils@v1.0.1
         with:
-          files: ${{ steps.prepare-paths.outputs.full_paths }}
+          files: ${{ steps.find-pbix.outputs.files }}
           config_file: ".github/config/deploy_config.yaml"
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
