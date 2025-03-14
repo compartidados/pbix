@@ -1,0 +1,81 @@
+name: Publicar arquivos Power BI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Setup PowerShell
+      shell: pwsh
+      run: |
+        Write-Host "PowerShell $($PSVersionTable.PSVersion)"
+        # Criar diretório pbix-files caso não exista
+        if (-not (Test-Path "pbix-files")) {
+          New-Item -Path "pbix-files" -ItemType Directory
+          Write-Host "Diretório pbix-files criado"
+        }
+    
+    - name: Install PowerBI modules
+      shell: pwsh
+      run: |
+        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+        Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+        Install-Module -Name MicrosoftPowerBIMgmt -Force -Scope CurrentUser
+        Write-Host "Módulo Power BI instalado com sucesso"
+    
+    - name: Deploy to Power BI
+      shell: pwsh
+      env:
+        CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        TENANT_ID: "eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2"
+        WORKSPACE_ID: "37ac69ab-ad7a-4540-af1d-baa525ee3c7f"
+      run: |
+        # Autenticar com Service Principal
+        $password = ConvertTo-SecureString $env:CLIENT_SECRET -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($env:CLIENT_ID, $password)
+        
+        try {
+          # Conectar ao Power BI
+          Write-Host "Conectando ao Power BI Service..."
+          Connect-PowerBIServiceAccount -ServicePrincipal -Credential $credential -TenantId $env:TENANT_ID
+          
+          # Encontrar arquivos PBIX
+          $files = Get-ChildItem -Path "." -Recurse -Filter "*.pbix" -File
+          
+          if ($files.Count -eq 0) {
+            Write-Host "Nenhum arquivo PBIX encontrado no repositório"
+            exit 0
+          }
+          
+          Write-Host "Encontrados $($files.Count) arquivos PBIX para publicação"
+          
+          # Publicar cada arquivo
+          foreach ($file in $files) {
+            $fileName = $file.Name
+            $filePath = $file.FullName
+            
+            Write-Host "Publicando arquivo: $fileName"
+            try {
+              New-PowerBIReport -Path $filePath -WorkspaceId $env:WORKSPACE_ID -ConflictAction CreateOrOverwrite
+              Write-Host "✅ Arquivo $fileName publicado com sucesso"
+            } catch {
+              Write-Host "❌ Erro ao publicar $fileName : $_"
+              exit 1
+            }
+          }
+          
+          Write-Host "Todos os arquivos foram publicados com sucesso!"
+        } catch {
+          Write-Host "Erro na execução: $_"
+          exit 1
+        }
