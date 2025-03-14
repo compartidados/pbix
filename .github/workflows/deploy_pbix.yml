@@ -13,10 +13,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up environment variables
-        env:
-          TENANT_ID: ${{ secrets.TENANT_ID }}
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        run: |
+          echo "TENANT_ID=${{ secrets.TENANT_ID }}" >> $GITHUB_ENV
+          echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> $GITHUB_ENV
+          echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> $GITHUB_ENV
 
       - name: Deploy to Power BI Workspace
         uses: NAZBeerTech/power-bi-workspace-deploy@1.0.0
