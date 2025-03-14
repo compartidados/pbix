@@ -6,38 +6,37 @@ on:
       - main
     paths:
       - 'compartidados/pbix/publish_pbix/**'
+  workflow_dispatch:
 
 jobs:
   Deploy-Asset:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Create directories if they don't exist
-        run: mkdir -p compartidados/pbix/publish_pbix
-
-      - name: List files in publish_pbix directory
-        run: ls -la compartidados/pbix/publish_pbix
-
-      - name: Get changed files
-        id: changed-files
+      # Detectar apenas arquivos ADICIONADOS ao diretório
+      - name: Get added files
+        id: added-files
         uses: SkyHighGrowth/gha-changed-files@v1.0.1
         with:
           path: "compartidados/pbix/publish_pbix"
           pattern: "*.pbix"
           separator: ","
           quotepath: "false"
+          filter: "A"  # Apenas arquivos adicionados (A = Added)
+          
+      - name: Debug - Show newly added files
+        run: echo "Arquivos novos para publicação: ${{ steps.added-files.outputs.all_modified_files || 'nenhum' }}"
 
-      - name: Debug - Show files to be uploaded
-        run: echo "Files to upload - ${{ steps.changed-files.outputs.all_modified_files }}"
-
-      - name: Upload files
-        if: steps.changed-files.outputs.all_modified_files != ''
+      # Publicar apenas se houver novos arquivos
+      - name: Upload new PBIX files
+        if: steps.added-files.outputs.all_modified_files != ''
         uses: SkyHighGrowth/gha-powerbi-utils@v1.0.1
         with:
-          files: ${{ steps.changed-files.outputs.all_modified_files }}
+          files: ${{ steps.added-files.outputs.all_modified_files }}
           config_file: ".github/config/deploy_config.yaml"
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
