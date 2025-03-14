@@ -17,32 +17,50 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Debug - Show file structure
+      - name: Find PBIX files
+        id: find-pbix
         run: |
-          echo "Estrutura do repositório:"
-          pwd
-          find . -name "*.pbix" | sort
+          # Encontrar arquivos PBIX adicionados recentemente
+          FILES=$(find publish_pbix -name "*.pbix" | tr '\n' ',')
+          if [ -n "$FILES" ]; then
+            # Remove a última vírgula
+            FILES=${FILES%,}
+            echo "files=$FILES" >> $GITHUB_OUTPUT
+            echo "Arquivos encontrados: $FILES"
+          else
+            echo "Nenhum arquivo PBIX encontrado"
+            echo "files=" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Copy PBIX files to temp directory
+      - name: Create config file
         run: |
-          mkdir -p /tmp/pbix_files
-          find publish_pbix -name "*.pbix" -exec cp {} /tmp/pbix_files/ \;
-          echo "Arquivos copiados para temp:"
-          ls -la /tmp/pbix_files/
-
-      - name: Generate file list
-        id: file-list
-        run: |
-          FILES=$(find /tmp/pbix_files -name "*.pbix" -type f | tr '\n' ',' | sed 's/,$//')
-          echo "files=$FILES" >> $GITHUB_OUTPUT
-          echo "Arquivos encontrados: $FILES"
+          cat > config.json << EOF
+          {
+            "spn_credentials": {
+              "tenant_id": "eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2"
+            },
+            "deploy_options": {
+              "max_file_size_supported_in_mb": 1000
+            },
+            "pbix_deploy_options": {
+              "pbix_name_conflict": "CreateOrOverwrite",
+              "override_model_name": true,
+              "override_report_label": true
+            },
+            "deploy_location": {
+              "workspace_id": "37ac69ab-ad7a-4540-af1d-baa525ee3c7f"
+            }
+          }
+          EOF
+          echo "Arquivo de configuração criado:"
+          cat config.json
 
       - name: Upload PBIX files
-        if: steps.file-list.outputs.files != ''
+        if: steps.find-pbix.outputs.files != ''
         uses: SkyHighGrowth/gha-powerbi-utils@v1.0.1
         with:
-          files: ${{ steps.file-list.outputs.files }}
-          config_file: ".github/config/deploy_config.yaml"
+          files: ${{ steps.find-pbix.outputs.files }}
+          args: "--config ./config.json"
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
