@@ -24,6 +24,7 @@ jobs:
         uses: SkyHighGrowth/gha-powerbi-utils@v1.0.1 # Substitua isso pela versão mais recente
         with:
           files: ${{ steps.changed-files.outputs.all_modified_files }}
+          config_file: ".github/configuration/deploy_config.yaml" # Atualizando o caminho do arquivo de configuração
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
