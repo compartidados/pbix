@@ -13,10 +13,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: List files in publish_pbix directory
+        run: ls -la compartidados/pbix/publish_pbix
+
       - name: Get changed files
         id: changed-files
         uses: SkyHighGrowth/gha-changed-files@v1.0.1
         with:
+          path: "compartidados/pbix/publish_pbix"
           separator: ","
           quotepath: "false"
 
