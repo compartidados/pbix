@@ -1,0 +1,27 @@
+name: Power BI Workspace Deploy
+
+on:
+  push:
+    paths:
+      - 'publish_pbix/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up environment variables
+        env:
+          TENANT_ID: ${{ secrets.TENANT_ID }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+
+      - name: Deploy to Power BI Workspace
+        uses: NAZBeerTech/power-bi-workspace-deploy@1.0.0
+        with:
+          config_file: 'path/to/config/file'
+          tenant_id: ${{ secrets.TENANT_ID }}
+          files: 'publish_pbix/*.pbix'
+          separator: ','
