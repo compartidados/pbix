@@ -1,13 +1,29 @@
-spn_credentials:
-    tenant_id: eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2           # O ID do tenant
+name: Deploy PBIX to Power BI
 
-deploy_options:
-    max_file_size_supported_in_mb: 110                        # Tamanho máximo do arquivo suportado. A ação suporta arquivos de até 1000 MB.
-    
-pbix_deploy_options:
-    pbix_name_conflict: CreateOrOverwrite                     # O que fazer se um dataset com o mesmo nome já existir. Opções: Abort, CreateOrOverwrite, GenerateUniqueName, Ignore, Overwrite
-    override_model_name: True                                 # Substituir rótulo existente no modelo durante a republicação do arquivo PBIX, o valor padrão é true.
-    override_report_label: True                               # Substituir rótulo existente no relatório durante a republicação do arquivo PBIX, o valor padrão é true.
+on:
+  push:
+    branches:
+      - main
 
-deploy_location:
-    workspace_id: ########-####-####-####-############         # O ID do workspace
+jobs:
+  Deploy-Asset:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: SkyHighGrowth/gha-changed-files@v1.0.1
+        with:
+          separator: ","
+          quotepath: "false"
+
+      - name: Upload files
+        uses: SkyHighGrowth/gha-powerbi-utils@v1.0.1 # Substitua isso pela versão mais recente
+        with:
+          files: ${{ steps.changed-files.outputs.all_modified_files }}
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
