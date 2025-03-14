@@ -14,30 +14,38 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
     
-    - name: Setup PowerShell
+    - name: Setup PowerShell e diretório
       shell: pwsh
       run: |
-        Write-Host "PowerShell $($PSVersionTable.PSVersion)"
-        # Criar diretório pbix-files caso não exista
+        Write-Host "Versão do PowerShell: $($PSVersionTable.PSVersion)"
+        # Criar diretório pbix-files se não existir
         if (-not (Test-Path "pbix-files")) {
-          New-Item -Path "pbix-files" -ItemType Directory
+          New-Item -Path "pbix-files" -ItemType Directory -Force
           Write-Host "Diretório pbix-files criado"
         }
+        
+        # Listar estrutura do repositório
+        Get-ChildItem -Recurse -Depth 2 | Select-Object FullName
     
-    - name: Install PowerBI modules
+    - name: Instalar módulo PowerBI (método alternativo)
       shell: pwsh
       run: |
-        # Instalar NuGet com fonte explícita
-        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -Source "https://www.nuget.org/api/v2"
+        # Atualizar o PSGallery sem depender do NuGet
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         
-        # Configurar PSGallery como confiável
+        # Definir PSGallery como confiável
         Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
         
-        # Instalar módulo Power BI
-        Install-Module -Name MicrosoftPowerBIMgmt -Force -Scope CurrentUser -AllowClobber
+        # Instalar PowerShellGet
+        Write-Host "Instalando PowerShellGet..."
+        Install-Module PowerShellGet -Force -AllowClobber -Scope CurrentUser -SkipPublisherCheck
         
-        Write-Host "Módulo Power BI instalado com sucesso"
-        Get-Module -ListAvailable MicrosoftPowerBIMgmt* | Format-Table Name, Version
+        # Instalar módulo PowerBI
+        Write-Host "Instalando módulo MicrosoftPowerBIMgmt..."
+        Install-Module -Name MicrosoftPowerBIMgmt -Force -AllowClobber -Scope CurrentUser -SkipPublisherCheck
+        
+        Write-Host "Verificando módulos instalados:"
+        Get-Module -Name MicrosoftPowerBIMgmt* -ListAvailable | Format-Table Name, Version
     
     - name: Deploy to Power BI
       shell: pwsh
@@ -47,46 +55,47 @@ jobs:
         TENANT_ID: "eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2"
         WORKSPACE_ID: "37ac69ab-ad7a-4540-af1d-baa525ee3c7f"
       run: |
-        # Autenticar com Service Principal
-        $password = ConvertTo-SecureString $env:CLIENT_SECRET -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential($env:CLIENT_ID, $password)
+        Write-Host "Iniciando processo de publicação..."
         
         try {
+          # Criar credencial segura
+          $password = ConvertTo-SecureString $env:CLIENT_SECRET -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential($env:CLIENT_ID, $password)
+          
           # Conectar ao Power BI
           Write-Host "Conectando ao Power BI Service..."
           Connect-PowerBIServiceAccount -ServicePrincipal -Credential $credential -TenantId $env:TENANT_ID
           
-          # Encontrar arquivos PBIX
+          # Procurar arquivos PBIX no repositório
+          Write-Host "Procurando arquivos PBIX..."
           $files = Get-ChildItem -Path "." -Recurse -Filter "*.pbix" -File
           
           if ($files.Count -eq 0) {
-            Write-Host "Nenhum arquivo PBIX encontrado no repositório"
+            Write-Host "⚠️ Nenhum arquivo PBIX encontrado no repositório"
             exit 0
           }
           
-          Write-Host "Encontrados $($files.Count) arquivos PBIX para publicação"
+          Write-Host "🔍 Encontrados $($files.Count) arquivos PBIX para publicação:"
+          $files | ForEach-Object { Write-Host " - $($_.FullName)" }
           
           # Publicar cada arquivo
           foreach ($file in $files) {
             $fileName = $file.Name
             $filePath = $file.FullName
             
-            Write-Host "Publicando arquivo: $fileName (caminho: $filePath)"
+            Write-Host "📤 Publicando arquivo: $fileName"
             try {
               New-PowerBIReport -Path $filePath -WorkspaceId $env:WORKSPACE_ID -ConflictAction CreateOrOverwrite
-              Write-Host "✅ Arquivo $fileName publicado com sucesso"
+              Write-Host "✅ Arquivo $fileName publicado com sucesso!"
             } catch {
-              Write-Host "❌ Erro ao publicar $fileName : $_"
-              Write-Host "Detalhes da exceção:"
-              $_.Exception | Format-List -Force
-              # Continuar mesmo com erro (remover "exit 1" para tentar publicar todos os arquivos)
+              Write-Host "❌ Erro ao publicar $fileName"
+              Write-Host "Detalhes do erro: $_"
+              # Continue para o próximo arquivo mesmo se houver erro
             }
           }
           
-          Write-Host "Processo de publicação finalizado!"
+          Write-Host "🎉 Processo de publicação concluído!"
         } catch {
-          Write-Host "Erro na execução: $_"
-          Write-Host "Detalhes da exceção:"
-          $_.Exception | Format-List -Force
+          Write-Host "❌ Erro geral na execução do script: $_"
           exit 1
         }
