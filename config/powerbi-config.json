@@ -1,0 +1,16 @@
+{
+  "spn_credentials": {
+    "tenant_id": "eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2"
+  },
+  "deploy_options": {
+    "max_file_size_supported_in_mb": 1000
+  },
+  "pbix_deploy_options": {
+    "pbix_name_conflict": "CreateOrOverwrite",
+    "override_model_name": true,
+    "override_report_label": true
+  },
+  "deploy_location": {
+    "workspace_id": "37ac69ab-ad7a-4540-af1d-baa525ee3c7f"
+  }
+}
