@@ -1,27 +1,13 @@
-name: Power BI Workspace Deploy
+spn_credentials:
+    tenant_id: eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2           # O ID do tenant
 
-on:
-  push:
-    paths:
-      - 'publish_pbix/**'
+deploy_options:
+    max_file_size_supported_in_mb: 110                        # Tamanho máximo do arquivo suportado. A ação suporta arquivos de até 1000 MB.
+    
+pbix_deploy_options:
+    pbix_name_conflict: CreateOrOverwrite                     # O que fazer se um dataset com o mesmo nome já existir. Opções: Abort, CreateOrOverwrite, GenerateUniqueName, Ignore, Overwrite
+    override_model_name: True                                 # Substituir rótulo existente no modelo durante a republicação do arquivo PBIX, o valor padrão é true.
+    override_report_label: True                               # Substituir rótulo existente no relatório durante a republicação do arquivo PBIX, o valor padrão é true.
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up environment variables
-        run: |
-          echo "TENANT_ID=${{ secrets.TENANT_ID }}" >> $GITHUB_ENV
-          echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> $GITHUB_ENV
-          echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> $GITHUB_ENV
-
-      - name: Deploy to Power BI Workspace
-        uses: NAZBeerTech/power-bi-workspace-deploy@1.0.0
-        with:
-          config_file: 'path/to/config/file'
-          tenant_id: ${{ secrets.TENANT_ID }}
-          files: 'publish_pbix/*.pbix'
-          separator: ','
+deploy_location:
+    workspace_id: ########-####-####-####-############         # O ID do workspace
