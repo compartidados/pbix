@@ -6,51 +6,64 @@ on:
       - main
     paths:
       - 'pbix-files/**/*.pbix'
-  workflow_dispatch:  # Permite execução manual
+  workflow_dispatch:
 
 jobs:
   deploy-powerbi:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest  # Usando Windows para melhor suporte ao PowerShell
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v3
-      
-      - name: Configurar Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      
-      - name: Instalar PowerBI CLI
-        run: |
-          npm install -g powerbi-cli
 
       - name: Listar arquivos PBIX
         id: find-pbix
+        shell: pwsh
         run: |
-          echo "Verificando arquivos PBIX"
-          mkdir -p pbix-files
-          FILES=$(find pbix-files -name "*.pbix" | tr '\n' ' ')
-          echo "Arquivos encontrados: $FILES"
-          echo "files=$FILES" >> $GITHUB_OUTPUT
-      
-      - name: Autenticar e publicar no Power BI
+          $files = Get-ChildItem -Path "pbix-files" -Filter "*.pbix" -Recurse -File | Select-Object -ExpandProperty FullName
+          $filesList = $files -join ','
+          Write-Host "Arquivos PBIX encontrados: $filesList"
+          echo "files=$filesList" >> $env:GITHUB_OUTPUT
+
+      - name: Instalar módulo Power BI
         if: steps.find-pbix.outputs.files != ''
+        shell: pwsh
         run: |
-          # Criar arquivo de configuração para autenticação
-          cat > config.json << EOF
-          {
-            "clientId": "${{ secrets.CLIENT_ID }}",
-            "clientSecret": "${{ secrets.CLIENT_SECRET }}",
-            "tenantId": "eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2"
+          Install-Module -Name MicrosoftPowerBIMgmt -Force -Scope CurrentUser -SkipPublisherCheck
+          Write-Host "Módulo Power BI instalado com sucesso"
+
+      - name: Publicar arquivos PBIX
+        if: steps.find-pbix.outputs.files != ''
+        shell: pwsh
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          TENANT_ID: "eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2"
+          WORKSPACE_ID: "37ac69ab-ad7a-4540-af1d-baa525ee3c7f"
+        run: |
+          # Criar credencial segura
+          $password = ConvertTo-SecureString $env:CLIENT_SECRET -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential($env:CLIENT_ID, $password)
+          
+          # Conectar ao Power BI
+          Connect-PowerBIServiceAccount -ServicePrincipal -Credential $credential -TenantId $env:TENANT_ID
+          
+          # Obter lista de arquivos
+          $filesList = "${{ steps.find-pbix.outputs.files }}"
+          $files = $filesList -split ','
+          
+          # Publicar cada arquivo
+          foreach ($file in $files) {
+            $fileName = Split-Path $file -Leaf
+            Write-Host "Publicando arquivo: $fileName"
+            
+            try {
+              New-PowerBIReport -Path $file -WorkspaceId $env:WORKSPACE_ID -ConflictAction CreateOrOverwrite
+              Write-Host "Arquivo $fileName publicado com sucesso"
+            }
+            catch {
+              Write-Host "Erro ao publicar $fileName : $_"
+              exit 1
+            }
           }
-          EOF
           
-          # Autenticar usando App Registration
-          powerbi login --config config.json
-          
-          # Publicar cada arquivo PBIX encontrado
-          for file in ${{ steps.find-pbix.outputs.files }}; do
-            echo "Publicando arquivo: $file"
-            powerbi import -w "37ac69ab-ad7a-4540-af1d-baa525ee3c7f" -f "$file" --nameConflict Overwrite
-            echo "Publicação concluída: $file"
-          done
+          Write-Host "Processo de publicação concluído"
