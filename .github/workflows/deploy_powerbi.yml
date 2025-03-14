@@ -1,0 +1,39 @@
+name: Publicar arquivos Power BI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pbix-files/**/*.pbix'
+  workflow_dispatch:  # Permite execução manual
+
+jobs:
+  deploy-powerbi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v3
+      
+      - name: Listar arquivos PBIX
+        id: find-pbix
+        run: |
+          # Encontra arquivos PBIX no diretório
+          echo "Verificando arquivos PBIX modificados"
+          cd $GITHUB_WORKSPACE
+          FILES=$(find pbix-files -name "*.pbix" -type f | paste -sd "," -)
+          echo "Arquivos PBIX encontrados: $FILES"
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+      
+      - name: Publicar arquivos PBIX
+        if: steps.find-pbix.outputs.files != ''
+        uses: microsoft/powerbi-actions@v0.7.0
+        with:
+          action: "publish"
+          workspace-id: "37ac69ab-ad7a-4540-af1d-baa525ee3c7f"
+          file-path: "${{ steps.find-pbix.outputs.files }}"
+          overwrite: true
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          TENANT_ID: "eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2"
