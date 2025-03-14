@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'compartidados/pbix/publish_pbix/**'
+      - 'publish_pbix/**'
   workflow_dispatch:
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
         id: added-files
         uses: SkyHighGrowth/gha-changed-files@v1.0.1
         with:
-          path: "compartidados/pbix/publish_pbix"
+          path: "publish_pbix"
           pattern: "*.pbix"
           separator: ","
           quotepath: "false"
