@@ -28,13 +28,35 @@ jobs:
           filter: "A"
 
       - name: Debug - Show newly added files
-        run: echo "Arquivos novos para publicação - ${{ steps.added-files.outputs.all_modified_files || 'nenhum' }}"
+        run: |
+          echo "Arquivos novos para publicação:"
+          echo "${{ steps.added-files.outputs.all_modified_files || 'nenhum' }}"
+          echo "Verificando se os arquivos existem:"
+          for file in $(echo "${{ steps.added-files.outputs.all_modified_files }}" | tr ',' ' '); do
+            if [ -f "$file" ]; then
+              echo "✅ $file existe"
+            else
+              echo "❌ $file não existe"
+            fi
+          done
+
+      - name: Prepare file paths
+        id: prepare-paths
+        if: steps.added-files.outputs.all_modified_files != ''
+        run: |
+          # Converter caminhos relativos para absolutos
+          FILES=$(echo "${{ steps.added-files.outputs.all_modified_files }}" | tr ',' '\n' | while read file; do
+            echo -n "$PWD/$file,"
+          done)
+          FILES=${FILES%,}  # Remove a última vírgula
+          echo "full_paths=$FILES" >> $GITHUB_OUTPUT
+          echo "Caminhos completos: $FILES"
 
       - name: Upload new PBIX files
         if: steps.added-files.outputs.all_modified_files != ''
         uses: SkyHighGrowth/gha-powerbi-utils@v1.0.1
         with:
-          files: ${{ steps.added-files.outputs.all_modified_files }}
+          files: ${{ steps.prepare-paths.outputs.full_paths }}
           config_file: ".github/config/deploy_config.yaml"
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
