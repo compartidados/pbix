@@ -17,7 +17,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Detectar apenas arquivos ADICIONADOS ao diretório
       - name: Get added files
         id: added-files
         uses: SkyHighGrowth/gha-changed-files@v1.0.1
@@ -26,12 +25,11 @@ jobs:
           pattern: "*.pbix"
           separator: ","
           quotepath: "false"
-          filter: "A"  # Apenas arquivos adicionados (A = Added)
-          
-      - name: Debug - Show newly added files
-        run: echo "Arquivos novos para publicação: ${{ steps.added-files.outputs.all_modified_files || 'nenhum' }}"
+          filter: "A"
 
-      # Publicar apenas se houver novos arquivos
+      - name: Debug - Show newly added files
+        run: echo "Arquivos novos para publicação - ${{ steps.added-files.outputs.all_modified_files || 'nenhum' }}"
+
       - name: Upload new PBIX files
         if: steps.added-files.outputs.all_modified_files != ''
         uses: SkyHighGrowth/gha-powerbi-utils@v1.0.1
