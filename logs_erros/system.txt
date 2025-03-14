@@ -1,0 +1,5 @@
+2025-03-14T14:33:48.0009012Z Requested labels: ubuntu-latest
+2025-03-14T14:33:48.0009012Z Job defined at: compartidados/pbix/.github/workflows/deploy-to-workspace.yml@refs/heads/main
+2025-03-14T14:33:48.0009012Z Waiting for a runner to pick up this job...
+2025-03-14T14:33:48.0774106Z Job is waiting for a hosted runner to come online.
+2025-03-14T14:33:48.0774242Z Job is about to start running on the hosted runner: GitHub Actions

@@ -1,0 +1,43 @@
+﻿2025-03-14T14:34:18.4513137Z ##[debug]Evaluating condition for step: 'Post Run actions/checkout@v2'
+2025-03-14T14:34:18.4514206Z ##[debug]Evaluating: always()
+2025-03-14T14:34:18.4514548Z ##[debug]Evaluating always:
+2025-03-14T14:34:18.4514865Z ##[debug]=> true
+2025-03-14T14:34:18.4515179Z ##[debug]Result: true
+2025-03-14T14:34:18.4515657Z ##[debug]Starting: Post Run actions/checkout@v2
+2025-03-14T14:34:18.4535706Z ##[debug]Loading inputs
+2025-03-14T14:34:18.4536652Z ##[debug]Evaluating: github.repository
+2025-03-14T14:34:18.4536940Z ##[debug]Evaluating Index:
+2025-03-14T14:34:18.4537180Z ##[debug]..Evaluating github:
+2025-03-14T14:34:18.4537424Z ##[debug]..=> Object
+2025-03-14T14:34:18.4537638Z ##[debug]..Evaluating String:
+2025-03-14T14:34:18.4537881Z ##[debug]..=> 'repository'
+2025-03-14T14:34:18.4538135Z ##[debug]=> 'compartidados/pbix'
+2025-03-14T14:34:18.4538411Z ##[debug]Result: 'compartidados/pbix'
+2025-03-14T14:34:18.4539562Z ##[debug]Evaluating: github.token
+2025-03-14T14:34:18.4540010Z ##[debug]Evaluating Index:
+2025-03-14T14:34:18.4540340Z ##[debug]..Evaluating github:
+2025-03-14T14:34:18.4540617Z ##[debug]..=> Object
+2025-03-14T14:34:18.4540837Z ##[debug]..Evaluating String:
+2025-03-14T14:34:18.4541057Z ##[debug]..=> 'token'
+2025-03-14T14:34:18.4541444Z ##[debug]=> '***'
+2025-03-14T14:34:18.4541768Z ##[debug]Result: '***'
+2025-03-14T14:34:18.4545640Z ##[debug]Loading env
+2025-03-14T14:34:18.4549281Z Post job cleanup.
+2025-03-14T14:34:18.5440920Z ##[debug]Getting git version
+2025-03-14T14:34:18.5452977Z [command]/usr/bin/git version
+2025-03-14T14:34:18.5494471Z git version 2.48.1
+2025-03-14T14:34:18.5518570Z ##[debug]Set git useragent to: git/2.48.1 (github-actions-checkout)
+2025-03-14T14:34:18.5523234Z ::add-mask::***
+2025-03-14T14:34:18.5532327Z Copying '/home/runner/.gitconfig' to '/home/runner/work/_temp/25cf1ede-bf13-487b-be61-b26c708c5159/.gitconfig'
+2025-03-14T14:34:18.5543113Z Temporarily overriding HOME='/home/runner/work/_temp/25cf1ede-bf13-487b-be61-b26c708c5159' before making global git config changes
+2025-03-14T14:34:18.5544038Z Adding repository directory to the temporary git global config as a safe directory
+2025-03-14T14:34:18.5547619Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/pbix/pbix
+2025-03-14T14:34:18.5583208Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-03-14T14:34:18.5614760Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-03-14T14:34:18.5875875Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-03-14T14:34:18.5902636Z http.https://github.com/.extraheader
+2025-03-14T14:34:18.5913387Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-03-14T14:34:18.5946648Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-03-14T14:34:18.6205733Z ##[debug]Unsetting HOME override
+2025-03-14T14:34:18.6318969Z ##[debug]Node Action run completed with exit code 0
+2025-03-14T14:34:18.6321572Z ##[debug]Finishing: Post Run actions/checkout@v2
