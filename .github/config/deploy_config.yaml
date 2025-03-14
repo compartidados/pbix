@@ -2,7 +2,7 @@ spn_credentials:
     tenant_id: eaaf39f1-6f65-42cc-bfe2-b9c336aaf2a2           # O ID do tenant
 
 deploy_options:
-    max_file_size_supported_in_mb: 110                        # Tamanho máximo do arquivo suportado. A ação suporta arquivos de até 1000 MB.
+    max_file_size_supported_in_mb: 1000                        # Tamanho máximo do arquivo suportado. A ação suporta arquivos de até 1000 MB.
     
 pbix_deploy_options:
     pbix_name_conflict: CreateOrOverwrite                     # O que fazer se um dataset com o mesmo nome já existir. Opções: Abort, CreateOrOverwrite, GenerateUniqueName, Ignore, Overwrite
@@ -10,4 +10,4 @@ pbix_deploy_options:
     override_report_label: True                               # Substituir rótulo existente no relatório durante a republicação do arquivo PBIX, o valor padrão é true.
 
 deploy_location:
-    workspace_id: ########-####-####-####-############         # O ID do workspace
+    workspace_id: 37ac69ab-ad7a-4540-af1d-baa525ee3c7f         # O ID do workspace
