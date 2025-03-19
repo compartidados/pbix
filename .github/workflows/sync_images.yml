@@ -1,0 +1,42 @@
+name: Sync Images from SharePoint
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * *' # Executa diariamente à meia-noite
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup OneDrive Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install onedrive
+
+      - name: Sync SharePoint Folder
+        env:
+          ONEDRIVE_AUTHFILES: ${{ secrets.ONEDRIVE_AUTHFILES }}
+          ONEDRIVE_DIR: ${{ secrets.ONEDRIVE_DIR }}
+        run: |
+          mkdir -p ~/onedrive
+          cp $ONEDRIVE_AUTHFILES ~/.config/onedrive/
+          onedrive --synchronize --single-directory "$ONEDRIVE_DIR"
+
+      - name: Copy Images to Repo
+        run: |
+          cp -r ~/onedrive/* ./images/
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "Sync images from SharePoint"
+          git push
